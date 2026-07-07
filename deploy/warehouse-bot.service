@@ -1,0 +1,22 @@
+[Unit]
+Description=Warehouse Mineflayer Bot Web/Admin
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/warehouse-bot
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=SHOP_PORT=28473
+Environment=ADMIN_PORT=28474
+Environment=BIND_HOST=0.0.0.0
+Environment=UPDATE_AUTO_RESTART=1
+Environment=ADMIN_PASSWORD=CHANGE_ME_STRONG_PASSWORD
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
