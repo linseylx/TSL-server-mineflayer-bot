@@ -26,6 +26,8 @@ data/temp_login_codes.json
 data/pending_bindings.json
 data/pending_registrations.json
 data/mainbot.lock.json
+data/bot_config.json
+data/warehouse.json
 data/bug_reports.json
 bug_status.json
 core/chat.txt
@@ -38,3 +40,7 @@ deploy-packages/
 local_backups/
 storage/
 *.bak_*
+.codegraph/
+deployed_info.json
+config_dir.json
+cloud_server.json

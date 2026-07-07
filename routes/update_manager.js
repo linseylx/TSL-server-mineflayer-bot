@@ -561,7 +561,7 @@ module.exports = function registerUpdateManager(app, ctx) {
         res.json({ success: true, status: updateStatus, maintenance: maintenanceState });
     });
 
-    app.get('/api/update/version', (req, res) => {
+    app.get('/api/update/version', requireAuth, (req, res) => {
         const manifest = loadPendingManifest();
         const localZipReady = Boolean(
             manifest?.hasLocalUpdate

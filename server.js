@@ -108,6 +108,20 @@ function verifyAuthToken(token) {
     }
 }
 
+function requireAdmin(req, res, next) {
+    const token = getRequestAuthToken(req);
+    if (!token) return res.status(401).json({ success: false, error: '请先登录' });
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        if (!decoded || !decoded.admin) {
+            return res.status(403).json({ success: false, error: '需要管理员权限' });
+        }
+    } catch {
+        return res.status(401).json({ success: false, error: '令牌无效' });
+    }
+    next();
+}
+
 function getSocketAuthToken(socket) {
     const authToken = socket.handshake.auth?.token;
     const headerToken = socket.handshake.headers?.authorization?.replace(/^Bearer\s+/i, '');
@@ -1599,19 +1613,33 @@ adminApp.post('/api/bot/temp-login-verified', strictLoginRateLimit, (req, res) =
     res.json({ success: true });
 });
 
-adminApp.get('/api/admin/users', requireAuth, (req, res) => {
+// Guard: bot-internal endpoints only accessible from localhost
+adminApp.use('/api/bot', (req, res, next) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ success: false, error: 'forbidden' });
+    }
+    next();
+});
+adminApp.use('/api/update/local', (req, res, next) => {
+    if (!isLocalRequest(req)) {
+        return res.status(403).json({ success: false, error: 'forbidden' });
+    }
+    next();
+});
+
+adminApp.get('/api/admin/users', requireAdmin, (req, res) => {
     reloadUsersFromDisk();
     res.json(users.map(sanitizeUser));
 });
 
-adminApp.get('/api/admin/api-key', requireAuth, (req, res) => {
+adminApp.get('/api/admin/api-key', requireAdmin, (req, res) => {
     res.status(410).json({ success: false, error: 'api key export disabled' });
 });
 
 require('./routes/transport_failover.js')(adminApp, {
     transportBots, transportBotCommands, transportBotLoginUrls, transportBotErrors,
     localBotLastSeen, failoverActive,
-    addLog, requireAuth, adminIO, shopIO, BOTS_DIR, TRANSPORT_CONFIG_FILE,
+    addLog, requireAdmin, adminIO, shopIO, BOTS_DIR, TRANSPORT_CONFIG_FILE,
     warehouse, saveWarehouse,
     rollbackTransportStock,
     recordPickupEvent,
@@ -1619,11 +1647,11 @@ require('./routes/transport_failover.js')(adminApp, {
 });
 
 require('./routes/update_manager.js')(adminApp, {
-    addLog, requireAuth, maintenanceState, setSystemStatus, broadcastSystemStatus
+    addLog, requireAdmin, maintenanceState, setSystemStatus, broadcastSystemStatus
 });
 
 require('./routes/admin_tools.js')(adminApp, {
-    warehouse, requireAuth, saveWarehouse, shopIO, adminIO, addLog, TRANSPORT_CONFIG_FILE
+    warehouse, requireAdmin, saveWarehouse, shopIO, adminIO, addLog, TRANSPORT_CONFIG_FILE
 });
 
 require('./routes/admin.js')(adminApp, {
@@ -1632,14 +1660,14 @@ require('./routes/admin.js')(adminApp, {
     transportBots, transportBotCommands, transportBotLoginUrls, transportBotErrors,
     localBotLastSeen, failoverActive, failoverTimer,
     addLog, saveWarehouse, saveBlacklist, saveUsers,
-    requireAuth, shopIO, adminIO, BOTS_DIR, TRANSPORT_CONFIG_FILE, CONFIG_FILE,
+    requireAdmin, shopIO, adminIO, BOTS_DIR, TRANSPORT_CONFIG_FILE, CONFIG_FILE,
     CONFIG_DIR_FILE, CLOUD_SERVER_FILE,
     tempLoginCodes, saveTempLoginCodes, mainBotControlTasks,
     auctionModule, OWNER_TYPES, ITEM_STATUS,
     setSystemStatus, broadcastSystemStatus, getSystemStatus
 });
 
-adminApp.get('/api/system/status', requireAuth, (req, res) => {
+adminApp.get('/api/system/status', requireAdmin, (req, res) => {
     res.json({ success: true, status: getSystemStatus() });
 });
 
