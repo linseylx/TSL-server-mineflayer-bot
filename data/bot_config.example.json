@@ -1,0 +1,9 @@
+{
+  "name": "WarehouseBot",
+  "email": "CHANGE_ME_MICROSOFT_ACCOUNT@example.com",
+  "host": "mc.example.com",
+  "port": 25565,
+  "version": "1.21.11",
+  "warehouseMode": "TOWN_ONLY",
+  "townPrefix": "[CHANGE_ME]"
+}

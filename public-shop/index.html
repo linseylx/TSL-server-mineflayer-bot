@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库系统</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23EF7A82'/%3E%3Cpath d='M14 22 32 12l18 10v20L32 52 14 42V22Z' fill='%23fff'/%3E%3Cpath d='M32 12v40M14 22l18 10 18-10' stroke='%23EF7A82' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <style>
+        :root {
+            --primary: #ef7a82;
+            --primary-dark: #d95f68;
+            --accent: #ffca28;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --ink: #1f2937;
+            --muted: #6b7280;
+            --line: rgba(239, 122, 130, 0.22);
+            --surface: #fff;
+            --soft: #fff7ed;
+            --shadow: 0 12px 36px rgba(239, 122, 130, 0.14);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 18% 14%, rgba(255, 202, 40, 0.22), transparent 28%),
+                radial-gradient(circle at 88% 10%, rgba(239, 122, 130, 0.2), transparent 30%),
+                linear-gradient(135deg, #fff8fb, #fff9e8 55%, #f8fbff);
+        }
+
+        .section-hidden { display: none !important; }
+        .login-page { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+        .login-container, .card, .modal-content {
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+        }
+        .login-container { width: min(430px, 100%); padding: 28px; border-radius: 16px; }
+        .brand { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 22px; text-align: center; }
+        .brand-mark, .header-mark {
+            display: inline-grid;
+            place-items: center;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            box-shadow: 0 10px 26px rgba(239, 122, 130, 0.28);
+        }
+        .brand-mark { width: 64px; height: 64px; border-radius: 18px; }
+        .header-mark { width: 38px; height: 38px; border-radius: 12px; }
+        .brand svg, .header-mark svg { width: 60%; height: 60%; }
+        h1 { font-size: 26px; line-height: 1.2; }
+        .subtext { color: var(--muted); font-size: 14px; }
+
+        .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+        .tab-btn, .btn, .header-btn {
+            border: 0;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 650;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+        .tab-btn { padding: 11px 12px; background: #f3f4f6; color: var(--muted); }
+        .tab-btn.active { color: #fff; background: linear-gradient(135deg, var(--primary), var(--accent)); }
+        .btn { padding: 12px 18px; font-size: 15px; }
+        .btn:hover, .header-btn:hover { transform: translateY(-1px); }
+        .btn-primary { color: white; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 8px 18px rgba(239, 122, 130, 0.24); }
+        .btn-secondary { color: var(--muted); background: #f3f4f6; }
+        .btn-link { color: var(--primary); background: transparent; padding: 8px; }
+        .btn-primary-sm { padding: 9px 15px; color: white; background: linear-gradient(135deg, var(--primary), var(--accent)); font-size: 14px; white-space: nowrap; }
+        .btn:disabled, .btn-primary-sm:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+        .form-group { margin-bottom: 14px; text-align: left; }
+        .form-group label { display: block; color: var(--muted); margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+        input, select {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 11px 12px;
+            color: var(--ink);
+            background: white;
+            font: inherit;
+        }
+        input:focus, select:focus { outline: 3px solid rgba(239, 122, 130, 0.16); border-color: var(--primary); }
+
+        .command-card, .profile-info, .item-info, .shop-header-info {
+            background: linear-gradient(135deg, #fff5f7, #fffbea);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+        }
+        .command-card { padding: 16px; margin-bottom: 14px; text-align: center; }
+        .command-line {
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px dashed rgba(239, 122, 130, 0.45);
+            background: white;
+            color: #374151;
+            font-family: Consolas, "Courier New", monospace;
+            cursor: pointer;
+            word-break: break-all;
+        }
+        .code-text { color: var(--primary); font-weight: 800; letter-spacing: 1px; }
+        .status-message { display: none; margin: 12px 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; }
+        .status-message.error { display: block; color: var(--danger); background: #fee2e2; }
+        .status-message.success { display: block; color: var(--success); background: #dcfce7; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px;
+            background: rgba(255, 255, 255, 0.72);
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(18px);
+        }
+        .header-title { display: flex; align-items: center; gap: 12px; }
+        .header h1 { font-size: 20px; }
+        .header-btn { color: white; background: linear-gradient(135deg, var(--primary), var(--accent)); padding: 9px 14px; }
+        .main { width: min(1440px, calc(100vw - 48px)); margin: 0 auto; padding: clamp(16px, 2.4vw, 24px); }
+        .card { border-radius: 18px; padding: clamp(16px, 2.6vw, 24px); }
+        .shop-header-info { display: grid; grid-template-columns: max-content minmax(220px, 320px) minmax(180px, 1fr); align-items: center; gap: 12px; padding: 14px; margin-bottom: 18px; }
+        .card-header { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 16px; }
+        .card-header h2 { color: var(--primary-dark); font-size: 19px; }
+        .search-bar { margin-bottom: 12px; }
+        .search-bar input { min-height: 46px; }
+        .category-filter {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(96px, max-content));
+            gap: 8px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .category-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 8px 12px;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.84);
+            cursor: pointer;
+            font-weight: 750;
+            transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+        }
+        .category-chip:hover { transform: translateY(-1px); border-color: rgba(239, 122, 130, 0.45); color: var(--primary-dark); }
+        .category-chip.active { color: #fff; border-color: transparent; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 8px 18px rgba(239, 122, 130, 0.18); }
+        .category-chip span {
+            min-width: 20px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            color: inherit;
+            background: rgba(15, 23, 42, 0.08);
+            font-size: 12px;
+        }
+        .category-chip.active span { background: rgba(255, 255, 255, 0.22); }
+        .list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+
+        .pickup-log-card { margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, 0.82); }
+        .pickup-log-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+        .pickup-log-head h3 { color: var(--primary-dark); font-size: 16px; }
+        .pickup-log-list { display: grid; gap: 8px; max-height: 260px; overflow: auto; }
+        .pickup-log-row { display: grid; grid-template-columns: 142px minmax(0, 1fr) max-content; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 10px; background: #fff; border: 1px solid rgba(15, 23, 42, 0.06); font-size: 13px; }
+        .pickup-log-player { font-weight: 800; color: var(--primary-dark); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pickup-log-item { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pickup-log-status { font-weight: 800; color: var(--muted); }
+        .pickup-log-status.completed { color: #16a34a; }
+        .pickup-log-status.failed { color: var(--danger); }
+        .pickup-log-status.queued { color: var(--primary); }
+
+        .product-card {
+            display: grid;
+            grid-template-columns: 62px minmax(0, 1fr) max-content;
+            align-items: center;
+            gap: 12px 14px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: white;
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+            min-height: 86px;
+        }
+        .product-card:hover { transform: translateY(-1px); border-color: rgba(239, 122, 130, 0.48); box-shadow: 0 8px 22px rgba(239, 122, 130, 0.12); }
+        .product-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f8fafc, #fff1f2);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 6px 16px rgba(15, 23, 42, 0.08);
+        }
+        .product-icon::after {
+            content: "";
+            position: absolute;
+            inset: 6px;
+            border-radius: 10px;
+            background: radial-gradient(circle at 35% 20%, rgba(255, 255, 255, 0.85), transparent 38%);
+            pointer-events: none;
+        }
+        .product-icon img { width: 42px; height: 42px; object-fit: contain; image-rendering: pixelated; position: relative; z-index: 1; }
+        .placeholder-icon { width: 30px; height: 30px; color: var(--primary); position: relative; z-index: 1; }
+        .shulker-preview {
+            position: absolute;
+            right: 3px;
+            bottom: 3px;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 1px;
+            max-width: 44px;
+            min-height: 15px;
+            padding: 1px 2px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.16);
+        }
+        .shulker-mini-item {
+            width: 13px;
+            height: 13px;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+        }
+        .shulker-mini-item img {
+            width: 13px;
+            height: 13px;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+        .shulker-mini-more {
+            color: var(--primary-dark);
+            font-size: 9px;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .product-main { min-width: 0; display: grid; grid-template-columns: minmax(0, max-content) minmax(80px, 1fr); align-items: baseline; gap: 4px 8px; }
+        .product-name { font-weight: 750; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .product-id { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .product-shulker-summary {
+            grid-column: 1 / -1;
+            min-width: 0;
+            color: var(--primary-dark);
+            font-size: 12px;
+            font-weight: 650;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .product-meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 1px; }
+        .storage-badge { padding: 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+        .storage-badge.public { color: #166534; background: #dcfce7; }
+        .storage-badge.private { color: #92400e; background: #fef3c7; }
+        .product-stock { color: var(--muted); font-size: 13px; }
+        .product-stock.low { color: var(--danger); font-weight: 700; }
+        .product-action {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            min-width: max-content;
+        }
+        .product-price { color: var(--primary-dark); font-weight: 800; min-width: 64px; }
+        .product-price::before { content: "价格 "; color: var(--muted); font-weight: 500; font-size: 12px; }
+        .empty-state { padding: 26px; color: var(--muted); text-align: center; border: 1px dashed var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.62); }
+
+        .modal { display: none; position: fixed; inset: 0; z-index: 1000; place-items: center; padding: 18px; background: rgba(15, 23, 42, 0.38); backdrop-filter: blur(8px); }
+        .modal.active { display: grid; }
+        .modal-content { position: relative; width: min(430px, 100%); max-height: calc(100vh - 36px); overflow: auto; padding: 22px; border-radius: 16px; text-align: center; }
+        .modal-content h3 { color: var(--primary-dark); margin-bottom: 16px; }
+        .close-btn { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: 50%; cursor: pointer; background: #f3f4f6; color: var(--muted); font-size: 20px; }
+        .profile-info, .item-info { padding: 14px; text-align: left; margin-bottom: 14px; }
+        .profile-info div { margin-bottom: 7px; }
+        .label { color: var(--muted); }
+        .value, .account-name, .item-info .name { font-weight: 750; }
+        .bind-code { margin: 14px 0; padding: 12px; border-radius: 12px; border: 2px dashed rgba(239, 122, 130, 0.45); color: var(--primary); background: #fff7ed; font: 800 24px Consolas, monospace; letter-spacing: 3px; }
+        .account-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+        .account-item:last-child { border-bottom: 0; }
+        .unbind-btn { border: 0; border-radius: 8px; padding: 7px 10px; color: var(--danger); background: #fee2e2; cursor: pointer; }
+        .quantity-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px 0; }
+        .quantity-input { width: 110px; text-align: center; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 12px; }
+        .modal-actions .btn { flex: 1; }
+
+        @media (max-width: 720px) {
+            .header { padding: 12px 16px; gap: 12px; }
+            .header h1 { font-size: 18px; }
+            .main { width: 100%; padding: 16px; }
+            .shop-header-info, .card-header { display: grid; grid-template-columns: 1fr; align-items: stretch; }
+            .list { grid-template-columns: 1fr; }
+            .category-filter { display: flex; flex-wrap: nowrap; overflow-x: auto; margin-inline: -2px; padding-bottom: 4px; }
+            .category-chip { flex: 0 0 auto; }
+            .product-card { grid-template-columns: 56px minmax(0, 1fr); }
+            .product-action { grid-column: 2 / -1; justify-content: space-between; padding-top: 8px; border-top: 1px dashed var(--line); }
+        }
+
+        @media (max-width: 460px) {
+            .login-page { padding: 12px; align-items: start; }
+            .login-container { padding: 20px; margin-top: 12px; }
+            .tabs { grid-template-columns: 1fr; }
+            .modal-actions, .quantity-row { flex-direction: column; }
+            .quantity-input { width: 100%; }
+            .product-card { grid-template-columns: 48px minmax(0, 1fr); padding: 12px; min-height: 132px; }
+            .product-main { grid-template-columns: 1fr; }
+            .product-action { display: grid; grid-template-columns: 1fr; }
+            .product-action .btn-primary-sm { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div id="login-page" class="login-page">
+        <div class="login-container">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5 12 4l8 4.5v9L12 22l-8-4.5v-9Z" fill="currentColor"/><path d="M4 8.5 12 13l8-4.5M12 13v9" stroke="#ef7a82" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div>
+                    <h1>仓库系统</h1>
+                    <p class="subtext">登录后领取或取出仓库物品</p>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('account-login')">账号登录</button>
+                <button class="tab-btn" onclick="showTab('temp-login')">临时登录</button>
+                <button class="tab-btn" onclick="showTab('register')">注册账号</button>
+            </div>
+
+            <div id="account-login-section">
+                <div class="form-group">
+                    <label>游戏用户名</label>
+                    <input type="text" id="login-username" placeholder="请输入注册时绑定的游戏名" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="login-password" placeholder="请输入密码" autocomplete="current-password" onkeypress="if(event.key==='Enter')loginWithPassword()">
+                </div>
+                <div class="status-message" id="account-login-status"></div>
+                <button class="btn btn-primary" onclick="loginWithPassword()" style="width:100%;">登录</button>
+                <p class="subtext" style="text-align:center;margin-top:12px;">忘记密码时，可用临时登录进入后重新设置。</p>
+            </div>
+
+            <div id="temp-login-section" class="section-hidden">
+                <div id="temp-login-step1">
+                    <p class="subtext" style="text-align:center;margin-bottom:18px;">点击按钮获取验证码，然后在游戏内发送登录命令。</p>
+                    <button class="btn btn-primary" onclick="generateTempLoginCode()" style="width:100%;">获取验证码</button>
+                </div>
+                <div id="temp-login-step2" style="display:none;flex-direction:column;">
+                    <div class="command-card">
+                        <p class="subtext">点击命令可复制</p>
+                        <div class="command-line" onclick="copyTempLoginCommand()" id="temp-login-command-container">
+                            /msg <span id="temp-login-botname">加载中...</span> login <span id="temp-login-code" class="code-text">-</span>
+                        </div>
+                    </div>
+                    <div class="status-message" id="temp-login-status"></div>
+                    <button class="btn btn-secondary" onclick="resetTempLogin()">重新获取</button>
+                </div>
+            </div>
+
+            <div id="register-section" class="section-hidden">
+                <div id="reg-step1">
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" id="reg-password" placeholder="请输入密码">
+                    </div>
+                    <div class="form-group">
+                        <label>确认密码</label>
+                        <input type="password" id="reg-confirm" placeholder="请再次输入密码">
+                    </div>
+                    <div class="status-message" id="reg-status"></div>
+                    <button class="btn btn-primary" onclick="startRegister()" style="width:100%;">生成绑定码</button>
+                </div>
+                <div id="reg-step2" class="section-hidden">
+                    <div class="command-card">
+                        <p class="subtext">在游戏内发送以下命令完成注册验证</p>
+                        <div class="command-line" onclick="copyBindCommand()" id="copy-command-container">
+                            /msg <span id="command-botname">加载中...</span> login <span id="command-code" class="code-text">-</span>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <button class="btn btn-link" onclick="refreshRegBindCode()">刷新验证码</button>
+                            <button class="btn btn-link" onclick="cancelRegister()">取消</button>
+                        </div>
+                        <p class="subtext">剩余 <span id="countdown" class="code-text">300</span> 秒</p>
+                    </div>
+                    <div class="status-message" id="reg-status-step2"></div>
+                    <button class="btn btn-primary" onclick="completeRegister()" style="width:100%;">完成注册</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="shop-page" class="section-hidden">
+        <div class="header">
+            <div class="header-title">
+                <div class="header-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5 12 4l8 4.5v9L12 22l-8-4.5v-9Z" fill="currentColor"/><path d="M4 8.5 12 13l8-4.5M12 13v9" stroke="#ef7a82" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <h1>仓库物品列表</h1>
+            </div>
+            <button class="header-btn" onclick="showProfileModal()">个人中心</button>
+        </div>
+
+        <div class="main">
+            <div class="card">
+                <div class="shop-header-info">
+                    <span>当前账号</span>
+                    <select id="account-select" class="account-select" onchange="updateSelectedAccount()">
+                        <option value="">请选择游戏账号</option>
+                    </select>
+                    <span id="no-account-hint" class="subtext">未绑定游戏账号，请先绑定</span>
+                </div>
+                <div class="card-header">
+                    <div>
+                        <h2>Bot 拾取物品</h2>
+                        <p class="subtext">这里显示当前可领取的公共仓库物品。</p>
+                    </div>
+                </div>
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="搜索物品名称...">
+                </div>
+                <div class="category-filter" id="item-category-filter" aria-label="物品分类"></div>
+                <div class="list" id="products-grid"></div>
+                <div class="pickup-log-card">
+                    <div class="pickup-log-head">
+                        <div>
+                            <h3>&#26368;&#36817;&#21462;&#36135;&#35760;&#24405;</h3>
+                            <p class="subtext">&#20844;&#24320; API: /api/pickup/logs &#21644; /api/pickup/stats</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="loadPickupLogs()">&#21047;&#26032;</button>
+                    </div>
+                    <div class="pickup-log-list" id="pickup-log-list">
+                        <div class="empty-state">&#26242;&#26080;&#21462;&#36135;&#35760;&#24405;</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="profile-modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">×</button>
+            <h3>个人中心</h3>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showProfileTab('info')">账户信息</button>
+                <button class="tab-btn" onclick="showProfileTab('bind')">绑定账号</button>
+                <button class="tab-btn" onclick="showProfileTab('change-pwd')">修改密码</button>
+            </div>
+
+            <div id="profile-info">
+                <div class="profile-info">
+                    <div><span class="label">用户名：</span><span class="value" id="profile-username">-</span></div>
+                    <div><span class="label">注册时间：</span><span class="value" id="profile-created">-</span></div>
+                </div>
+                <h4 style="text-align:left;color:var(--primary-dark);margin-bottom:8px;">已绑定游戏账号</h4>
+                <div id="bound-accounts-list"><div class="empty-state">暂无绑定账号</div></div>
+                <button class="btn btn-secondary" style="width:100%;margin-top:14px;" onclick="logout()">退出登录</button>
+            </div>
+
+            <div id="profile-bind" class="section-hidden">
+                <div id="bind-step1">
+                    <p class="subtext" style="margin-bottom:14px;">生成验证码后，在游戏内发给 Bot 完成绑定。</p>
+                    <button class="btn btn-primary" onclick="generateBindCode()">生成验证码</button>
+                </div>
+                <div id="bind-step2" class="section-hidden">
+                    <p class="subtext">游戏内发送验证码</p>
+                    <div class="bind-code" id="bind-code-display">-</div>
+                    <p class="subtext" style="margin-bottom:14px;">有效期 5 分钟。发送 <b>/msg Bot login 验证码</b> 后网页会自动完成绑定。</p>
+                    <div class="form-group">
+                        <label>游戏内用户名</label>
+                        <input type="text" id="bind-game-username" placeholder="可选：自动绑定失败时手动输入">
+                    </div>
+                    <div class="status-message" id="bind-status"></div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="cancelBind()">取消</button>
+                        <button class="btn btn-primary" onclick="verifyBind()">确认绑定</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="profile-change-pwd" class="section-hidden">
+                <div class="form-group">
+                    <label>原密码</label>
+                    <input type="password" id="old-password" placeholder="请输入原密码">
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" id="new-password" placeholder="请输入新密码">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="confirm-new-password" placeholder="请再次输入新密码">
+                </div>
+                <div class="status-message" id="pwd-status"></div>
+                <button class="btn btn-primary" onclick="changePassword()" style="width:100%;">修改密码</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="claim-modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">×</button>
+            <h3>领取物品</h3>
+            <div class="item-info" id="claim-item-info">
+                <div class="name">物品名称</div>
+                <div class="stock">库存：0</div>
+            </div>
+            <div style="text-align:left;margin-bottom:14px;">
+                <label class="label">发送到</label>
+                <div class="item-info" id="claim-account" style="margin-top:6px;color:var(--primary-dark);font-weight:800;">-</div>
+            </div>
+            <div class="quantity-row">
+                <label>数量</label>
+                <input type="number" class="quantity-input" id="claim-quantity" value="1" min="1">
+            </div>
+            <div class="status-message" id="claim-status"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmClaim()">确认领取</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="microsoft-login-modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="document.getElementById('microsoft-login-modal').classList.remove('active')">×</button>
+            <h3>Microsoft 登录</h3>
+            <p class="subtext" style="margin-bottom:14px;">Bot 需要登录 Minecraft 账号。</p>
+            <a href="#" id="microsoft-login-url" target="_blank" class="command-line" style="display:block;text-decoration:none;">登录链接</a>
+            <p class="subtext" style="margin-top:14px;">设备代码</p>
+            <div class="bind-code" id="microsoft-login-code">XXXXXXXX</div>
+        </div>
+    </div>
+
+    <script>
+        (async function loadSocketClient() {
+            try {
+                const script = document.createElement('script');
+                script.src = '/socket.io/socket.io.js';
+                script.onload = function() {
+                    if (typeof initSocket === 'function') initSocket();
+                };
+                document.head.appendChild(script);
+            } catch (err) {
+                console.warn('无法连接管理服务器 socket.io', err);
+            }
+        })();
+    </script>
+    <script src="app.js?v=2.1.0"></script>
+</body>
+</html>
