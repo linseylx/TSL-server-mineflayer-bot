@@ -1,0 +1,21 @@
+{
+  "mainHost": "127.0.0.1",
+  "mainPort": 28473,
+  "mainAdminPort": 28474,
+  "host": "mc.example.com",
+  "port": 25565,
+  "version": "1.21.11",
+  "pollInterval": 5000,
+  "heartbeatInterval": 30000,
+  "bots": [
+    {
+      "num": 1,
+      "type": "local",
+      "email": "CHANGE_ME_TRANSPORT_ACCOUNT@example.com",
+      "host": "mc.example.com",
+      "port": 25565,
+      "version": "1.21.11",
+      "status": "stopped"
+    }
+  ]
+}
